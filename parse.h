@@ -5,8 +5,9 @@
 // Declares parse routines for top-down recursive-descent parser
 // Use in CST 320 Lab3
 //
-// Author: Phil Howard 
+// Authors: Phil Howard, Cade McNiven
 // phil.howard@oit.edu
+// cade.mcniven@oit.edu
 //
 
 // Functions for finding non-terminals that are part of the calc grammar

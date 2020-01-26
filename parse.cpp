@@ -9,6 +9,8 @@
 // cade.mcniven@oit.edu
 //
 
+#define EOF 0
+
 #include <iostream>
 #include <string>
 #include "lex.h"
@@ -29,6 +31,23 @@ static bool IsIn(unordered_set<int>& set, int value)
     auto found = set.find(value);
     if (found != set.end()) return true;
     return false;
+}
+
+//**************************************************************
+// Handles error correction for everything other than having
+// a space ']' in the code
+void CorrectError()
+{
+    int token = PeekToken();
+    while (token != END && token != EOF &&
+           token != ';' && token != ']')
+    {
+        AdvanceToken();
+        token = PeekToken();
+    }
+
+    if (token == ';')
+        AdvanceToken();
 }
 
 //**************************************************************
@@ -54,11 +73,15 @@ bool FindSymbol(char symbol)
 bool FindPROG()
 {
     int token = PeekToken();
-    while (token != END && token != 0)
+    //Call FindSTMTS until we find "end" or eof
+    while (token != END && token != EOF)
     {
         FindSTMTS();
         token = PeekToken();
-        if (token != END && token != 0)
+
+        //This happens if there is an extra ]
+        //somewhere in the file
+        if (token != END && token != EOF)
         {
             Error("Statment");
             AdvanceToken();
@@ -78,20 +101,12 @@ bool FindPROG()
 bool FindSTMTS()
 {
     int token = PeekToken();
-    while (token != END && token != 0 && token != ']')
+    while (token != END && token != EOF && token != ']')
     {
-        if (!FindSTMT())
-        {
-            token = PeekToken();
-            while (token != END && token != 0 &&
-                   token != ';' && token != ']')
-            {
-                AdvanceToken();
-                token = PeekToken();
-            }
-            if (token != END && token != 0 && token != ']')
-                AdvanceToken();
-        }
+        if (!FindSTMT()) 
+            CorrectError();
+
+        token = PeekToken();
     }
 
     return true;
@@ -113,10 +128,6 @@ bool FindSTMT()
         if (!FindSymbol('=')) return false;
         if (!FindEXPR()) return false;
         if (!FindSymbol(';')) return false;
-
-        std::cout << "Found a statement\n";
-
-        return true;
     }
     //STMT -> while ( EXPR ) STMT
     else if (token == WHILE)
@@ -126,10 +137,6 @@ bool FindSTMT()
         if (!FindEXPR()) return false;
         if (!FindSymbol(')')) return false;
         if (!FindSTMT()) return false;
-
-        std::cout << "Found a statement\n";
-
-        return true;
     }
     //STMT -> [ STMTS ]
     else if (token == '[')
@@ -137,13 +144,10 @@ bool FindSTMT()
         AdvanceToken();
         FindSTMTS();
         if (!FindSymbol(']')) return false;
-
-        std::cout << "Found a statement\n";
-
-        return true;
     }
 
-    return false;
+    std::cout << "Found a statement\n";
+    return true;
 }
 
 //**************************************************************
@@ -164,23 +168,13 @@ bool FindEXPR()
     {
         if (!FindEXPR()) return false;
         if (!FindEXPR()) return false;
-
-        return true;
     }
     //EXPR -> num
-    else if (token == NUM)
-    {
+    //     -> var
+    else if (token == NUM || token == VAR)
         AdvanceToken();
-        return true;
-    }
-    //EXPR -> var
-    else if (token == VAR)
-    {
-        AdvanceToken();
-        return true;
-    }
 
-    return false;
+    return true;
 }
 
 //**************************************************************
