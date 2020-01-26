@@ -21,3 +21,4 @@ bool FindSTMT();
 bool FindEXPR();
 bool FindOP();
 bool FindSymbol(char symbol);
+void CorrectError();
