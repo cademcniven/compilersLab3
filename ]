@@ -53,20 +53,9 @@ bool FindSymbol(char symbol)
 // PROG -> STMTS end
 bool FindPROG()
 {
-    int token = PeekToken();
-    while (token != END && token != 0)
-    {
-        FindSTMTS();
-        token = PeekToken();
-        if (token != END && token != 0)
-        {
-            Error("Statment");
-            AdvanceToken();
-            token = PeekToken();
-        }
-    }
+    FindSTMTS();
 
-    if (token == END) return true;
+    if (PeekToken() == END) return true;
 
     Error("Program");
     return false;
@@ -77,22 +66,7 @@ bool FindPROG()
 //           -> null
 bool FindSTMTS()
 {
-    int token = PeekToken();
-    while (token != END && token != 0 && token != ']')
-    {
-        if (!FindSTMT())
-        {
-            token = PeekToken();
-            while (token != END && token != 0 &&
-                   token != ';' && token != ']')
-            {
-                AdvanceToken();
-                token = PeekToken();
-            }
-            if (token != END && token != 0 && token != ']')
-                AdvanceToken();
-        }
-    }
+    while (FindSTMT()) {}
 
     return true;
 }
@@ -109,26 +83,45 @@ bool FindSTMT()
     //STMT -> var = EXPR ;
     if (token == VAR)
     {
+        bool error = false;
         AdvanceToken();
-        if (!FindSymbol('=')) return false;
-        if (!FindEXPR()) return false;
-        if (!FindSymbol(';')) return false;
+        if (!error && !FindSymbol('=')) error = true;
+        if (!error && !FindEXPR()) error = true;
+        if (!error && !FindSymbol(';')) error = true;
 
-        std::cout << "Found a statement\n";
+        if (error)
+        {
+            while (token != ';' && token != END)
+            {
+                token = PeekToken();
+                AdvanceToken();
+            }
+        }
+        else std::cout << "Found a statement\n";
 
         return true;
     }
     //STMT -> while ( EXPR ) STMT
     else if (token == WHILE)
     {
+        bool error = false;
         AdvanceToken();
-        if (!FindSymbol('(')) return false;
-        if (!FindEXPR()) return false;
-        if (!FindSymbol(')')) return false;
-        if (!FindSTMT()) return false;
+        if (!error && !FindSymbol('(')) error = true;
+        if (!error && !FindEXPR()) error = true;
+        if (!error && !FindSymbol(')')) error = true;
+        if (!error && !FindSTMT()) error = true;
 
-        std::cout << "Found a statement\n";
+        if (!error)
+        {
+            std::cout << "Found a statement\n";
+            return true;
+        }
 
+        while (token != ';' && token != END)
+        {
+            token = PeekToken();
+            AdvanceToken();
+        }
         return true;
     }
     //STMT -> [ STMTS ]
@@ -136,14 +129,19 @@ bool FindSTMT()
     {
         AdvanceToken();
         FindSTMTS();
-        if (!FindSymbol(']')) return false;
 
-        std::cout << "Found a statement\n";
-
-        return true;
+        if (!FindSymbol(']'))
+        {
+            while (token != ';' && token != ']' && token != END)
+            {
+                token = PeekToken();
+                AdvanceToken();
+            }
+            
+        }
     }
 
-    return false;
+    return true;
 }
 
 //**************************************************************
